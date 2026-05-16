@@ -189,15 +189,10 @@ with tab1:
                 res2 = f2.result()
                 res3 = f3.result()
 
-        with st.spinner("Evaluating answers concurrently..."):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-                e1 = executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res1["Answer"], correct)
-                e2 = executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res2["Answer"], correct)
-                e3 = executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res3["Answer"], correct)
-                
-                eval1 = e1.result()
-                eval2 = e2.result()
-                eval3 = e3.result()
+        with st.spinner("Evaluating answers sequentially to ensure accuracy..."):
+            eval1 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res1["Answer"], correct)
+            eval2 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res2["Answer"], correct)
+            eval3 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res3["Answer"], correct)
 
         col1, col2, col3 = st.columns(3)
         

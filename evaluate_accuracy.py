@@ -11,17 +11,23 @@ load_dotenv()
 # Initialize Gemini for Judging
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
-judge_model = genai.GenerativeModel('gemini-2.5-flash')
+judge_model = genai.GenerativeModel('gemini-1.5-flash')
 
 # BERTScore will be loaded dynamically when needed
 bertscore = None
 
-JUDGE_PROMPT = """Grade the system's answer.
+JUDGE_PROMPT = """You are an expert Materials Science judge. Grade the 'System Answer' against the 'Correct Answer'.
+Your output MUST be either 'PASS' or 'FAIL'. No other text.
+
+Criteria:
+- PASS: The system answer is factually correct and matches the core meaning of the correct answer.
+- FAIL: The system answer is wrong, contains hallucinations, or misses the primary point.
+
 Question: {q}
-Correct answer: {correct}
-System answer: {answer}
-PASS = the system answer correctly addresses the question with no major errors.
-FAIL = the answer is wrong, missing, or contradicts the correct answer."""
+Correct Answer: {correct}
+System Answer: {answer}
+
+Grade (PASS/FAIL):"""
 
 API_KEYS = [
     os.getenv("GOOGLE_API_KEY")
@@ -29,25 +35,16 @@ API_KEYS = [
 current_key_idx = 0
 
 def get_judge_verdict(prompt):
-    global current_key_idx
-    max_retries = len(API_KEYS)
-    for attempt in range(max_retries):
-        try:
-            genai.configure(api_key=API_KEYS[current_key_idx])
-            judge_model = genai.GenerativeModel('gemini-2.5-flash')
-            response = judge_model.generate_content(prompt)
-            content = response.text.upper()
-            return "PASS" in content
-        except Exception as e:
-            error_str = str(e)
-            if "429" in error_str or "quota" in error_str.lower():
-                print(f"  [Judge Rate Limit] Key {current_key_idx} failed. Switching... (Attempt {attempt+1}/{max_retries})")
-                current_key_idx = (current_key_idx + 1) % len(API_KEYS)
-                time.sleep(1)
-            else:
-                print(f"  Judge error: {e}")
-                return False
-    return False
+    """Fallback judge using Gemini."""
+    api_key = os.getenv("GOOGLE_API_KEY")
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        return "PASS" in response.text.upper()
+    except Exception as e:
+        print(f"  Gemini Judge error: {e}")
+        return False
 
 def evaluate_single_answer(eval_client, bertscore_metric, question, answer, correct):
     """
@@ -58,19 +55,16 @@ def evaluate_single_answer(eval_client, bertscore_metric, question, answer, corr
         return {"passed": False, "bertscore": 0.0}
 
     # 1. LLM-as-a-Judge
-    prompt = JUDGE_PROMPT.format(q=question, correct=correct, answer=answer)
     passed = False
     try:
-        # InferenceClient.text_generation
-        response = eval_client.text_generation(prompt, max_new_tokens=10)
-        passed = "PASS" in response.upper()
+        # Use Chat Completion for better instruction following on Llama 3.1
+        messages = [{"role": "user", "content": JUDGE_PROMPT.format(q=question, correct=correct, answer=answer)}]
+        response = eval_client.chat_completion(messages=messages, max_tokens=10)
+        verdict = response.choices[0].message.content.upper()
+        passed = "PASS" in verdict
     except Exception as e:
-        # Fallback to Gemini if HF client fails (optional, but let's try to be robust)
-        try:
-            verdict = get_judge_verdict(prompt)
-            passed = verdict if verdict is not None else False
-        except:
-            passed = False
+        print(f"HF Judge Error: {e}. Falling back to Gemini...")
+        passed = get_judge_verdict(JUDGE_PROMPT.format(q=question, correct=correct, answer=answer))
     
     # 2. BERTScore
     try:
@@ -82,6 +76,7 @@ def evaluate_single_answer(eval_client, bertscore_metric, question, answer, corr
         )
         score = results["f1"][0]
     except Exception as e:
+        print(f"BERTScore Error: {e}")
         score = 0.0
         
     return {"passed": passed, "bertscore": score}
