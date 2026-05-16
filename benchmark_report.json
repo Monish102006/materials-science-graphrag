@@ -1,0 +1,63 @@
+{
+  "project": "GraphRAG Inference for Materials Science Discovery",
+  "dataset": {
+    "domain": "Materials Science (arXiv papers)",
+    "size": "10,000 papers",
+    "tokens": "~2.7 million tokens",
+    "benchmark_questions": 30
+  },
+  "pipelines": {
+    "Pipeline 1: Raw LLM": {
+      "questions_answered": 21,
+      "avg_tokens": 332.8,
+      "median_tokens": 342,
+      "total_tokens": 6989,
+      "avg_latency_sec": 1.89,
+      "median_latency_sec": 1.88,
+      "cost_per_query_usd": 0.00023,
+      "cost_per_1000_queries_usd": 0.2296,
+      "judge_pass_rate": 36.4,
+      "judge_pass": 4,
+      "judge_total": 11,
+      "bertscore_f1_avg": 0.3211,
+      "bertscore_f1_median": 0.2212
+    },
+    "Pipeline 2: Basic RAG": {
+      "questions_answered": 21,
+      "avg_tokens": 1054,
+      "median_tokens": 1087,
+      "total_tokens": 22134,
+      "avg_latency_sec": 1.03,
+      "median_latency_sec": 0.97,
+      "cost_per_query_usd": 0.000727,
+      "cost_per_1000_queries_usd": 0.7273,
+      "judge_pass_rate": 27.3,
+      "judge_pass": 3,
+      "judge_total": 11,
+      "bertscore_f1_avg": 0.3179,
+      "bertscore_f1_median": 0.2228
+    },
+    "Pipeline 3: GraphRAG": {
+      "questions_answered": 17,
+      "avg_tokens": 853.9,
+      "median_tokens": 775,
+      "total_tokens": 14516,
+      "avg_latency_sec": 8.52,
+      "median_latency_sec": 5.66,
+      "cost_per_query_usd": 0.000589,
+      "cost_per_1000_queries_usd": 0.5892,
+      "judge_pass_rate": 55.6,
+      "judge_pass": 5,
+      "judge_total": 9,
+      "bertscore_f1_avg": 0.4107,
+      "bertscore_f1_median": 0.2776
+    }
+  },
+  "comparison": {
+    "token_reduction_vs_basic_rag_pct": 19.0,
+    "cost_reduction_vs_basic_rag_pct": 19.0,
+    "graphrag_avg_tokens": 853.9,
+    "basic_rag_avg_tokens": 1054,
+    "token_reduction_vs_raw_llm_pct": -156.6
+  }
+}

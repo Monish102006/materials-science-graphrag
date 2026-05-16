@@ -1,0 +1,37 @@
+# Single-Hop (1-8)
+1. What is the bandgap of gallium nitride (GaN) typically reported in recent literature?
+2. What are the primary crystal structures of titanium dioxide?
+3. Which method is most commonly used to synthesize graphene oxide?
+4. What is the critical temperature (Tc) of YBCO superconductors?
+5. How is the piezoelectric effect defined in perovskite materials?
+6. What is the role of dopants in enhancing the conductivity of silicon?
+7. What are the typical phase transitions observed in shape memory alloys like NiTi?
+8. What is the main advantage of using solid-state electrolytes over liquid ones?
+
+# Multi-Hop (9-15)
+9. Which materials used in solid-state batteries share similar conductivity properties with graphene-based electrodes?
+10. How does the synthesis temperature of lithium iron phosphate affect its electrochemical performance in electric vehicles?
+11. Which transition metal dichalcogenides (TMDs) exhibit both high carrier mobility and indirect-to-direct bandgap transitions?
+12. How do the magnetic properties of Heusler alloys compare when synthesized via magnetron sputtering versus arc melting?
+13. What is the relationship between the particle size of silver nanoparticles and their antibacterial efficacy in biomedical applications?
+14. Which dopants introduced into zinc oxide (ZnO) simultaneously improve its photocatalytic activity and visible light absorption?
+15. How does the choice of substrate influence the epitaxial growth and strain relaxation of gallium arsenide (GaAs) thin films?
+
+# Relational (16-23)
+16. How does the structural evolution of Ti/Cu multilayers depend on their period thickness?
+17. What is the specific correlation between the porosity of aerogels and their thermal insulation capabilities?
+18. In what ways do the electronic properties of twisted bilayer graphene differ from those of single-layer graphene at the magic angle?
+19. How does substituting sulfur with selenium in MoS2 alter its optical absorption spectrum?
+20. What is the interplay between the crystal lattice structure and the ionic conductivity in LLZO solid electrolytes?
+21. How do variations in annealing time dictate the grain boundary density and mechanical hardness of cold-rolled steel?
+22. What relationship exists between the band alignment of heterojunctions and their efficiency in photoelectrochemical water splitting?
+23. How does the surface roughness of titanium implants influence osteoblast cell adhesion and proliferation?
+
+# Summary (24-30)
+24. Summarize the major challenges and recent advancements in the commercialization of perovskite solar cells.
+25. Provide an overview of the role of machine learning algorithms in discovering new thermoelectric materials.
+26. What are the key emerging trends in the development of biodegradable polymers for packaging applications?
+27. Summarize the impact of quantum confinement on the optoelectronic properties of 2D nanomaterials.
+28. Describe the current state-of-the-art techniques for the scalable manufacturing of carbon nanotubes.
+29. Outline the primary mechanisms through which metal-organic frameworks (MOFs) achieve high gas storage capacities.
+30. Summarize the environmental and economic implications of recycling rare-earth elements from spent lithium-ion batteries.
