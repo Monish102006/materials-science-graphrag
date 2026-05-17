@@ -5,8 +5,11 @@ import evaluate
 import time
 import google.generativeai as genai
 from dotenv import load_dotenv
+import threading
 
 load_dotenv()
+
+bert_lock = threading.Lock()
 
 # Initialize Gemini for Judging
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -68,14 +71,15 @@ def evaluate_single_answer(eval_client, bertscore_metric, question, answer, corr
     
     # 2. BERTScore
     try:
-        results = bertscore_metric.compute(
-            predictions=[answer],
-            references=[correct],
-            lang="en",
-            model_type="distilbert-base-uncased",
-            rescale_with_baseline=False
-        )
-        score = results["f1"][0]
+        with bert_lock:
+            results = bertscore_metric.compute(
+                predictions=[answer],
+                references=[correct],
+                lang="en",
+                model_type="distilbert-base-uncased",
+                rescale_with_baseline=False
+            )
+            score = results["f1"][0]
     except Exception as e:
         print(f"BERTScore Error: {e}")
         score = 0.0

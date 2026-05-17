@@ -191,10 +191,15 @@ with tab1:
                 res3 = f3.result()
 
         if run_eval:
-            with st.spinner("Evaluating answers sequentially to ensure accuracy (using lightweight BERTScore)..."):
-                eval1 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res1["Answer"], correct)
-                eval2 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res2["Answer"], correct)
-                eval3 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res3["Answer"], correct)
+            with st.spinner("Evaluating answers concurrently in parallel to ensure maximum speed..."):
+                with concurrent.futures.ThreadPoolExecutor(max_workers=3) as eval_executor:
+                    f_eval1 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res1["Answer"], correct)
+                    f_eval2 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res2["Answer"], correct)
+                    f_eval3 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res3["Answer"], correct)
+                    
+                    eval1 = f_eval1.result()
+                    eval2 = f_eval2.result()
+                    eval3 = f_eval3.result()
         else:
             eval1 = {"passed": False, "bertscore": 0.0}
             eval2 = {"passed": False, "bertscore": 0.0}
