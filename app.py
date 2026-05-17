@@ -33,15 +33,17 @@ PRICE_PER_TOKEN = 0.69 / 1_000_000  # avg $/token
 # Try to connect to Vector DB
 @st.cache_resource
 def get_chroma_db():
-    try:
-        chroma_client = chromadb.PersistentClient(path="./chroma_db")
-        sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
-        collection = chroma_client.get_collection(name="arxiv_papers", embedding_function=sentence_transformer_ef)
-        return collection, True
-    except Exception:
-        return None, False
+    chroma_client = chromadb.PersistentClient(path="./chroma_db")
+    sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+    collection = chroma_client.get_collection(name="arxiv_papers", embedding_function=sentence_transformer_ef)
+    return collection
 
-collection, db_available = get_chroma_db()
+try:
+    collection = get_chroma_db()
+    db_available = True
+except Exception as e:
+    st.sidebar.warning(f"ChromaDB load error: {e}")
+    collection, db_available = None, False
 
 # --- Evaluation Resources ---
 HF_TOKEN = os.getenv("HF_TOKEN")
