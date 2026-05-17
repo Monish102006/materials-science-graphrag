@@ -219,28 +219,55 @@ def find_seed_papers(conn: TigerGraphConnection, question: str, top_k: int = 8) 
         print(f"  Using cached papers ({len(_cached_papers)} papers) ...")
         papers = _cached_papers
     else:
-        print(f"  Fetching materials Papers from TigerGraph (first time, caching) ...")
+        print(f"  Loading materials Papers from local dataset file (instant caching) ...")
         papers = []
         try:
-            # Fetch a large batch of papers and filter locally for our materials dataset
-            all_papers = conn.getVertices("Papers", limit=10000)
-            for p in all_papers:
-                if p["v_id"].startswith("mat_"):
-                    attrs = p.get("attributes", {})
-                    title = attrs.get("title", "")
-                    abstract_parts = [
-                        attrs.get("abstract", ""), attrs.get("categories", ""),
-                        attrs.get("year", ""), attrs.get("column_", ""),
-                        attrs.get("column_2", ""), attrs.get("column_3", ""),
-                        attrs.get("column_4", ""),
-                    ]
-                    full_text = title + " " + " ".join(pt for pt in abstract_parts if pt)
-                    p["_precomputed_tokens"] = tokenize(full_text)
-                    papers.append(p)
-            _cached_papers = papers
-            print(f"  Cached {len(papers)} papers for future queries.")
+            if os.path.exists(MATERIALS_DATASET):
+                with open(MATERIALS_DATASET, "r", encoding="utf-8") as f:
+                    for i, line in enumerate(f):
+                        if i >= INGEST_LIMIT:
+                            break
+                        line = line.strip()
+                        if not line:
+                            continue
+                        doc = json.loads(line)
+                        vertex_id = f"{MATERIALS_PREFIX}{i}"
+                        
+                        attrs = {
+                            "id": vertex_id,
+                            "title": doc.get("title", ""),
+                            "abstract": doc.get("summary", ""),
+                            "categories": ", ".join(doc.get("categories", [])) if isinstance(doc.get("categories"), list) else doc.get("categories", ""),
+                            "year": str(doc.get("published", "2020"))[:4],
+                            "column_": doc.get("summary", "")[500:900] if len(doc.get("summary", "")) > 500 else "",
+                            "column_2": doc.get("summary", "")[900:1300] if len(doc.get("summary", "")) > 900 else "",
+                            "column_3": doc.get("summary", "")[1300:1700] if len(doc.get("summary", "")) > 1300 else "",
+                            "column_4": doc.get("summary", "")[1700:2000] if len(doc.get("summary", "")) > 1700 else "",
+                        }
+                        
+                        p = {
+                            "v_id": vertex_id,
+                            "attributes": attrs
+                        }
+                        
+                        full_text = attrs["title"] + " " + attrs["abstract"]
+                        p["_precomputed_tokens"] = tokenize(full_text)
+                        papers.append(p)
+                _cached_papers = papers
+                print(f"  Loaded and cached {len(papers)} papers from local dataset.")
+            else:
+                print(f"  WARNING: Local dataset file not found: {MATERIALS_DATASET}, falling back to TigerGraph fetch")
+                all_papers = conn.getVertices("Papers", limit=1000)
+                for p in all_papers:
+                    if p["v_id"].startswith("mat_"):
+                        attrs = p.get("attributes", {})
+                        title = attrs.get("title", "")
+                        abstract = attrs.get("abstract", "")
+                        p["_precomputed_tokens"] = tokenize(title + " " + abstract)
+                        papers.append(p)
+                _cached_papers = papers
         except Exception as e:
-            print(f"  Error fetching Papers: {e}")
+            print(f"  Error loading/fetching Papers: {e}")
             return []
 
     scored = []
