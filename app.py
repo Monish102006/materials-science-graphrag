@@ -172,38 +172,50 @@ with tab1:
     st.subheader("Run a Live Comparison")
     st.markdown("Select a question and run it through all 3 pipelines simultaneously.")
     
-    selected_q = st.selectbox("Select a benchmark question:", questions, key="live_q")
-    run_eval = st.checkbox("Run Live Semantic Evaluation (LLM-as-a-Judge & BERTScore)", value=False, help="Runs real-time LLM validation and BERTScore similarity. Check this to see accuracy grading, or uncheck to generate answers instantly in under 3 seconds.")
+    if "running" not in st.session_state:
+        st.session_state.running = False
+
+    selected_q = st.selectbox("Select a benchmark question:", questions, key="live_q", disabled=st.session_state.running)
+    run_eval = st.checkbox("Run Live Semantic Evaluation (LLM-as-a-Judge & BERTScore)", value=False, help="Runs real-time LLM validation and BERTScore similarity. Check this to see accuracy grading, or uncheck to generate answers instantly in under 3 seconds.", disabled=st.session_state.running)
     
-    if st.button("Run Benchmark 🚀", type="primary"):
+    btn_label = "Running Benchmark..." if st.session_state.running else "Run Benchmark 🚀"
+    
+    if st.button(btn_label, type="primary", disabled=st.session_state.running) or st.session_state.running:
+        if not st.session_state.running:
+            st.session_state.running = True
+            st.rerun()
+
         import concurrent.futures
         
         correct = ground_truth_data.get(selected_q, "")
         
-        with st.spinner("Running all 3 pipelines concurrently..."):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-                f1 = executor.submit(run_pipeline_1, selected_q)
-                f2 = executor.submit(run_pipeline_2, selected_q)
-                f3 = executor.submit(run_pipeline_3_wrapper, selected_q)
-                
-                res1 = f1.result()
-                res2 = f2.result()
-                res3 = f3.result()
-
-        if run_eval:
-            with st.spinner("Evaluating answers concurrently in parallel to ensure maximum speed..."):
-                with concurrent.futures.ThreadPoolExecutor(max_workers=3) as eval_executor:
-                    f_eval1 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res1["Answer"], correct)
-                    f_eval2 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res2["Answer"], correct)
-                    f_eval3 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res3["Answer"], correct)
+        try:
+            with st.spinner("Running all 3 pipelines concurrently..."):
+                with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                    f1 = executor.submit(run_pipeline_1, selected_q)
+                    f2 = executor.submit(run_pipeline_2, selected_q)
+                    f3 = executor.submit(run_pipeline_3_wrapper, selected_q)
                     
-                    eval1 = f_eval1.result()
-                    eval2 = f_eval2.result()
-                    eval3 = f_eval3.result()
-        else:
-            eval1 = {"passed": False, "bertscore": 0.0}
-            eval2 = {"passed": False, "bertscore": 0.0}
-            eval3 = {"passed": False, "bertscore": 0.0}
+                    res1 = f1.result()
+                    res2 = f2.result()
+                    res3 = f3.result()
+
+            if run_eval:
+                with st.spinner("Evaluating answers concurrently in parallel to ensure maximum speed..."):
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as eval_executor:
+                        f_eval1 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res1["Answer"], correct)
+                        f_eval2 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res2["Answer"], correct)
+                        f_eval3 = eval_executor.submit(evaluate_single_answer, get_eval_client(), get_bertscore(), selected_q, res3["Answer"], correct)
+                        
+                        eval1 = f_eval1.result()
+                        eval2 = f_eval2.result()
+                        eval3 = f_eval3.result()
+            else:
+                eval1 = {"passed": False, "bertscore": 0.0}
+                eval2 = {"passed": False, "bertscore": 0.0}
+                eval3 = {"passed": False, "bertscore": 0.0}
+        finally:
+            st.session_state.running = False
 
         col1, col2, col3 = st.columns(3)
         
