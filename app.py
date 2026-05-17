@@ -173,6 +173,7 @@ with tab1:
     st.markdown("Select a question and run it through all 3 pipelines simultaneously.")
     
     selected_q = st.selectbox("Select a benchmark question:", questions, key="live_q")
+    run_eval = st.checkbox("Run Live Semantic Evaluation (LLM-as-a-Judge & BERTScore)", value=False, help="Runs real-time LLM validation and BERTScore similarity. Check this to see accuracy grading, or uncheck to generate answers instantly in under 3 seconds.")
     
     if st.button("Run Benchmark 🚀", type="primary"):
         import concurrent.futures
@@ -189,10 +190,15 @@ with tab1:
                 res2 = f2.result()
                 res3 = f3.result()
 
-        with st.spinner("Evaluating answers sequentially to ensure accuracy..."):
-            eval1 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res1["Answer"], correct)
-            eval2 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res2["Answer"], correct)
-            eval3 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res3["Answer"], correct)
+        if run_eval:
+            with st.spinner("Evaluating answers sequentially to ensure accuracy (using lightweight BERTScore)..."):
+                eval1 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res1["Answer"], correct)
+                eval2 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res2["Answer"], correct)
+                eval3 = evaluate_single_answer(get_eval_client(), get_bertscore(), selected_q, res3["Answer"], correct)
+        else:
+            eval1 = {"passed": False, "bertscore": 0.0}
+            eval2 = {"passed": False, "bertscore": 0.0}
+            eval3 = {"passed": False, "bertscore": 0.0}
 
         col1, col2, col3 = st.columns(3)
         
@@ -201,8 +207,8 @@ with tab1:
             st.metric("Tokens Used", res1["Tokens"])
             st.metric("Latency", f"{res1['Latency']}s")
             st.metric("Cost", f"${res1['Cost']}")
-            st.metric("LLM Judge", "PASS ✅" if eval1["passed"] else "FAIL ❌")
-            st.metric("BERTScore F1", f"{eval1['bertscore']:.4f}")
+            st.metric("LLM Judge", "PASS ✅" if eval1["passed"] else "FAIL ❌" if run_eval else "N/A")
+            st.metric("BERTScore F1", f"{eval1['bertscore']:.4f}" if run_eval else "N/A")
             with st.expander("Full Answer"):
                 st.write(res1["Answer"])
             
@@ -211,8 +217,8 @@ with tab1:
             st.metric("Tokens Used", res2["Tokens"])
             st.metric("Latency", f"{res2['Latency']}s")
             st.metric("Cost", f"${res2['Cost']}")
-            st.metric("LLM Judge", "PASS ✅" if eval2["passed"] else "FAIL ❌")
-            st.metric("BERTScore F1", f"{eval2['bertscore']:.4f}")
+            st.metric("LLM Judge", "PASS ✅" if eval2["passed"] else "FAIL ❌" if run_eval else "N/A")
+            st.metric("BERTScore F1", f"{eval2['bertscore']:.4f}" if run_eval else "N/A")
             with st.expander("Full Answer"):
                 st.write(res2["Answer"])
             
@@ -221,8 +227,8 @@ with tab1:
             st.metric("Tokens Used", res3["Tokens"])
             st.metric("Latency", f"{res3['Latency']}s")
             st.metric("Cost", f"${res3['Cost']}")
-            st.metric("LLM Judge", "PASS ✅" if eval3["passed"] else "FAIL ❌")
-            st.metric("BERTScore F1", f"{eval3['bertscore']:.4f}")
+            st.metric("LLM Judge", "PASS ✅" if eval3["passed"] else "FAIL ❌" if run_eval else "N/A")
+            st.metric("BERTScore F1", f"{eval3['bertscore']:.4f}" if run_eval else "N/A")
             with st.expander("Full Answer"):
                 st.write(res3["Answer"])
 

@@ -72,6 +72,7 @@ def evaluate_single_answer(eval_client, bertscore_metric, question, answer, corr
             predictions=[answer],
             references=[correct],
             lang="en",
+            model_type="distilbert-base-uncased",
             rescale_with_baseline=False
         )
         score = results["f1"][0]
@@ -158,6 +159,7 @@ def evaluate_pipeline(pipeline_name, answers_dict, ground_truth):
             predictions=pipeline_outputs,
             references=[t["correct_answer"] for t in truths],
             lang="en",
+            model_type="distilbert-base-uncased",
             rescale_with_baseline=False
         )
         bertscore_f1 = sum(bert_results["f1"]) / len(bert_results["f1"])
