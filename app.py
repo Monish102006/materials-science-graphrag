@@ -175,18 +175,21 @@ with tab1:
     if "running" not in st.session_state:
         st.session_state.running = False
 
+    if "benchmark_results" not in st.session_state:
+        st.session_state.benchmark_results = None
+
     selected_q = st.selectbox("Select a benchmark question:", questions, key="live_q", disabled=st.session_state.running)
     run_eval = st.checkbox("Run Live Semantic Evaluation (LLM-as-a-Judge & BERTScore)", value=False, help="Runs real-time LLM validation and BERTScore similarity. Check this to see accuracy grading, or uncheck to generate answers instantly in under 3 seconds.", disabled=st.session_state.running)
     
     btn_label = "Running Benchmark..." if st.session_state.running else "Run Benchmark 🚀"
     
-    if st.button(btn_label, type="primary", disabled=st.session_state.running) or st.session_state.running:
-        if not st.session_state.running:
-            st.session_state.running = True
-            st.rerun()
+    if st.button(btn_label, type="primary", disabled=st.session_state.running):
+        st.session_state.benchmark_results = None  # Clear old results
+        st.session_state.running = True
+        st.rerun()
 
+    if st.session_state.running:
         import concurrent.futures
-        
         correct = ground_truth_data.get(selected_q, "")
         
         try:
@@ -214,8 +217,54 @@ with tab1:
                 eval1 = {"passed": False, "bertscore": 0.0}
                 eval2 = {"passed": False, "bertscore": 0.0}
                 eval3 = {"passed": False, "bertscore": 0.0}
+
+            # Store results
+            st.session_state.benchmark_results = {
+                "res1": res1,
+                "res2": res2,
+                "res3": res3,
+                "eval1": eval1,
+                "eval2": eval2,
+                "eval3": eval3,
+                "run_eval": run_eval,
+                "q": selected_q
+            }
+
+            # Save answers to local text files
+            r1_save = dict(res1)
+            r2_save = dict(res2)
+            r3_save = dict(res3)
+            r1_save.update(eval1)
+            r2_save.update(eval2)
+            r3_save.update(eval3)
+
+            def save_answer(filename, title, question, response):
+                with open(filename, "a", encoding="utf-8") as f:
+                    f.write(f"--- {title} ---\n")
+                    f.write(f"Question: {question}\n")
+                    f.write(f"Answer: {response['Answer']}\n")
+                    f.write(f"Tokens: {response['Tokens']}\n")
+                    f.write(f"Latency: {response['Latency']}s\n")
+                    f.write(f"LLM Judge: {'PASS' if response.get('passed') else 'FAIL'}\n")
+                    f.write(f"BERTScore: {response.get('bertscore', 0):.4f}\n\n")
+
+            save_answer("normal llm.answers.txt", "Pipeline 1: Raw LLM", selected_q, r1_save)
+            save_answer("ragllm_answers.txt", "Pipeline 2: Basic RAG", selected_q, r2_save)
+            save_answer("tigergraph.answers.txt", "Pipeline 3: GraphRAG", selected_q, r3_save)
+
+        except Exception as e:
+            st.error(f"Error during execution: {e}")
         finally:
             st.session_state.running = False
+            st.rerun()
+
+    # Outside the execution block, render results permanently
+    if st.session_state.benchmark_results is not None:
+        results = st.session_state.benchmark_results
+        res1, res2, res3 = results["res1"], results["res2"], results["res3"]
+        eval1, eval2, eval3 = results["eval1"], results["eval2"], results["eval3"]
+        run_eval = results["run_eval"]
+        q = results["q"]
 
         col1, col2, col3 = st.columns(3)
         
@@ -249,26 +298,6 @@ with tab1:
             with st.expander("Full Answer"):
                 st.write(res3["Answer"])
 
-        # Store eval results
-        res1.update(eval1)
-        res2.update(eval2)
-        res3.update(eval3)
-
-        # Save answers
-        def save_answer(filename, title, question, response):
-            with open(filename, "a", encoding="utf-8") as f:
-                f.write(f"--- {title} ---\n")
-                f.write(f"Question: {question}\n")
-                f.write(f"Answer: {response['Answer']}\n")
-                f.write(f"Tokens: {response['Tokens']}\n")
-                f.write(f"Latency: {response['Latency']}s\n")
-                f.write(f"LLM Judge: {'PASS' if response.get('passed') else 'FAIL'}\n")
-                f.write(f"BERTScore: {response.get('bertscore', 0):.4f}\n\n")
-
-        save_answer("normal llm.answers.txt", "Pipeline 1: Raw LLM", selected_q, res1)
-        save_answer("ragllm_answers.txt", "Pipeline 2: Basic RAG", selected_q, res2)
-        save_answer("tigergraph.answers.txt", "Pipeline 3: GraphRAG", selected_q, res3)
-        
         # Token Reduction Highlight
         if res2["Tokens"] > 0 and res3["Tokens"] > 0:
             token_reduction = ((res2["Tokens"] - res3["Tokens"]) / res2["Tokens"]) * 100
