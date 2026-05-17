@@ -116,14 +116,12 @@ def ingest_materials(conn: TigerGraphConnection) -> int:
     """
     print(f"  Checking existing materials data in TigerGraph ...")
     try:
-        # Try to fetch the last paper to ensure full ingestion
-        sample = conn.getVerticesById("Papers", [f"{MATERIALS_PREFIX}499"])
-        if sample:
-            total = conn.getVertexCount("Papers")
+        total = conn.getVertexCount("Papers")
+        if total > 50:
             print(f"  Materials already loaded. Total Papers: {total}")
             return total
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"  Error checking existing vertices: {e}")
 
     if not os.path.exists(MATERIALS_DATASET):
         print(f"  WARNING: Dataset file not found: {MATERIALS_DATASET}")
@@ -484,7 +482,7 @@ def generate_answer(question: str, subgraph: dict) -> dict:
 # Main pipeline
 # ---------------------------------------------------------------------------
 
-def run_pipeline3(question=None):
+def run_pipeline3(question=None, skip_ingest=True):
     """Run the full TigerGraph GraphRAG pipeline."""
     global _cached_token, _cached_conn, _cached_papers
 
@@ -514,8 +512,11 @@ def run_pipeline3(question=None):
             raise SystemExit(f"[FATAL] Cannot query graph: {e}")
 
     # Step 2 - Ingest materials data (idempotent)
-    print("\n[Step 2] Ensuring materials-science data is in TigerGraph ...")
-    ingest_materials(conn)
+    if not skip_ingest:
+        print("\n[Step 2] Ensuring materials-science data is in TigerGraph ...")
+        ingest_materials(conn)
+    else:
+        print("\n[Step 2] Skipping ingestion to ensure high-speed querying ...")
 
     # Step 3 - Seed retrieval
     print(f"\n[Step 3] Retrieving seed papers from TigerGraph ...")
