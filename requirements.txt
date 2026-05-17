@@ -1,0 +1,13 @@
+streamlit
+groq
+chromadb
+sentence-transformers
+pyTigerGraph
+google-generativeai
+evaluate
+bert-score
+huggingface_hub
+plotly
+pandas
+python-dotenv
+requests

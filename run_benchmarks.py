@@ -4,9 +4,12 @@ from chromadb.utils import embedding_functions
 import google.generativeai as genai
 import time
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configure Gemini
-API_KEY = "AIzaSyAnqk1drgAlH519ZpNfHNZGNqoWvDPUM9M"
+API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
 

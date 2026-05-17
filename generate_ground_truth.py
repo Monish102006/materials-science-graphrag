@@ -2,9 +2,12 @@ import os
 import json
 import time
 import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Setup Gemini for generating reference answers
-API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyAnqk1drgAlH519ZpNfHNZGNqoWvDPUM9M")
+API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
