@@ -172,25 +172,18 @@ with tab1:
     st.subheader("Run a Live Comparison")
     st.markdown("Select a question and run it through all 3 pipelines simultaneously.")
     
-    if "running" not in st.session_state:
-        st.session_state.running = False
-
     if "benchmark_results" not in st.session_state:
         st.session_state.benchmark_results = None
 
-    selected_q = st.selectbox("Select a benchmark question:", questions, key="live_q", disabled=st.session_state.running)
-    run_eval = st.checkbox("Run Live Semantic Evaluation (LLM-as-a-Judge & BERTScore)", value=False, help="Runs real-time LLM validation and BERTScore similarity. Check this to see accuracy grading, or uncheck to generate answers instantly in under 3 seconds.", disabled=st.session_state.running)
+    selected_q = st.selectbox("Select a benchmark question:", questions, key="live_q")
+    run_eval = st.checkbox("Run Live Semantic Evaluation (LLM-as-a-Judge & BERTScore)", value=False, help="Runs real-time LLM validation and BERTScore similarity. Check this to see accuracy grading, or uncheck to generate answers instantly in under 3 seconds.")
     
-    btn_label = "Running Benchmark..." if st.session_state.running else "Run Benchmark 🚀"
-    
-    if st.button(btn_label, type="primary", disabled=st.session_state.running):
-        st.session_state.benchmark_results = None  # Clear old results
-        st.session_state.running = True
-        st.rerun()
-
-    if st.session_state.running:
+    if st.button("Run Benchmark 🚀", type="primary"):
         import concurrent.futures
         correct = ground_truth_data.get(selected_q, "")
+        
+        # Clear old results so spinner is the main focus
+        st.session_state.benchmark_results = None
         
         try:
             with st.spinner("Running all 3 pipelines concurrently..."):
@@ -254,9 +247,6 @@ with tab1:
 
         except Exception as e:
             st.error(f"Error during execution: {e}")
-        finally:
-            st.session_state.running = False
-            st.rerun()
 
     # Outside the execution block, render results permanently
     if st.session_state.benchmark_results is not None:
